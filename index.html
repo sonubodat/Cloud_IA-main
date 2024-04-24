@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three-Tier Application with Docker</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="App.css" />
+    <style>
+        body {
+    background-color: crimson;
+}
+    </style>
+  </head>
+  <body style="padding-top: 20px;">
+     <div class="container">
+      <h1>Title: Three-Tier Application with Docker</h1>
+      <p>
+        This repository contains a three-tier application built using Docker,
+        utilizing a multi-container setup. The application consists of three
+        layers: presentation layer, application layer, and data layer.
+      </p>
+
+      <h2>Architecture Overview</h2>
+      <img
+        class="image-overlay"
+        src="https://github.com/kathan-shah1893/IA/assets/136159210/f434097f-4ec7-48c8-a3f0-e70025e0bb18"
+        alt="Architecture Overview"
+      />
+
+      <p>
+        <strong>Presentation Layer:</strong> Responsible for presenting
+        information to the user. Built with HTML, CSS, and JavaScript.
+      </p>
+      <p>
+        <strong>Application Layer:</strong> Contains the business logic and
+        functionality of the application. Built with JAVA.
+      </p>
+      <p>
+        <strong>Data Layer:</strong> Stores and manages the data used by the
+        application. Utilizes MYSQL.
+      </p>
+
+      <h2>Prerequisites</h2>
+      <ul>
+        <li>JDK 1.8 or later</li>
+        <li>Maven 3 or later</li>
+        <li>MySQL 5.6 or later</li>
+      </ul>
+
+      <h2>Technologies</h2>
+      <ul>
+        <li>Spring MVC</li>
+        <li>Spring Security</li>
+        <li>Spring Data JPA</li>
+        <li>Maven</li>
+        <li>JSP</li>
+        <li>MySQL</li>
+      </ul>
+
+      <h2>Database Setup</h2>
+      <p>Installation Steps for MySQL on Ubuntu 14.04:</p>
+      <pre><code>sudo apt-get update
+sudo apt-get install mysql-server</code></pre>
+      <p>Importing Database Dump:</p>
+      <ol>
+        <li>
+          Locate the <code>accountsdb.sql</code> file in the
+          <code>/src/main/resources</code> directory.
+        </li>
+        <li>
+          This file contains a MySQL dump of the database schema and data.
+        </li>
+        <li>
+          Run the following command to import the dump into the MySQL database:
+        </li>
+      </ol>
+      <pre><code>mysql -u &lt;user_name&gt; -p accounts &lt; accountsdb.sql</code></pre>
+
+      <h2>Getting Started</h2>
+      <h3>Prerequisites</h3>
+      <p>Docker installed on your machine</p>
+      <h3>Steps</h3>
+      <ol>
+        <li>Clone this repository to your local machine:</li>
+      </ol>
+
+      <pre>
+    <code id="clone-code">git clone https://github.com/sonubodat/Cloud_IA</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('clone-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('clone-code')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="2">
+        <li>Navigate to the project directory:</li>
+      </ol>
+      <pre>
+    <code id="navigate-code">cd IA</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('navigate-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('navigate-code')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="3">
+        <li>Database Dockerfile:</li>
+      </ol>
+      <pre>
+    <code id="db-docker">
+        FROM mysql:8.0.33
+        LABEL "PROJECT"="VPROFILE"
+        LABEL "AUTHOR"="Sonu"
+
+        ENV MYSQL_ROOT_PASSWORD="vprodbpass"
+        ENV MYSQL_DATABASE="accounts"
+
+        ADD db_backup.sql docker-entrypoint-initdb.d/db_backup.sql
+    </code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('db-docker')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="4">
+        <li>OpenJDK Dockerfile:</li>
+      </ol>
+      <pre>
+    <code id="db-jdk">
+        FROM openjdk:11 AS BUILD_IMAGE
+        RUN apt update && apt install maven -y
+        RUN git clone https://github.com/devopshydclub/vprofile-project.git
+        RUN cd vprofile-project && git checkout docker &&  mvn install
+
+        FROM tomcat:9-jre11
+        RUN rm -rf /usr/local/tomcat/webapps/*
+        COPY --from=BUILD_IMAGE vprofile-project/target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+        EXPOSE 8080
+        CMD ["catalina.sh","run"]
+    </code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('db-jdk')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="5">
+        <li>Nginx Dockerfile:</li>
+      </ol>
+      <pre>
+    <code id="nginx-jdk">
+        FROM nginx
+        RUN rm /etc/nginx/conf.d/default.conf
+        COPY nginvproapp.conf /etc/nginx/conf.d/
+    </code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('nginx-jdk')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="6">
+        <li>Docker-compose.yml file:</li>
+      </ol>
+      <pre>
+    <code id="meet">
+        version: '3.8'
+services:
+  vprodb:
+    build: ./Docker-files/db
+    image: vprocontainers/vprofiledb
+    container_name: vprodb
+    ports:
+      - "3306:3306"
+    volumes:
+      - vprodbdata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWROD=vprodbpass
+  vprocache01:
+    image: memcached
+    ports:
+      - "11211:11211"
+  vpromq01:
+    image: rabbitmq
+    ports:
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+  vproapp:
+    build: ./Docker-files/app
+    container_name: vproapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - vproappdata:/usr/local/tomcat/webapps
+  vproweb:
+    build: ./Docker-files/web
+    container_name: vproweb
+    ports:
+      - "80:80"
+volumes:
+  vprodbdata:
+  vproappdata:
+
+    </code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('meet')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <ol start="7">
+        <li>Build the Docker images:</li>
+      </ol>
+      <pre>
+    <code id="build-code">docker-compose build</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('build-code')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <img src="https://github.com/kathan-shah1893/IA_cloud/assets/136159210/2c8d6899-4bdb-46a7-9fd2-37bb7c44c096" alt="Architecture Overview" />
+
+      <ol start="8">
+        <li>Start the Docker containers:</li>
+      </ol>
+      <pre>
+    <code id="start-code">docker-compose up -d</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('start-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('start-code')">📋</span>
+    <!-- </button> -->
+</pre>
+
+      <img src="https://github.com/kathan-shah1893/IA_cloud/assets/136159210/883b3f18-27f8-47cd-b32a-a607b32d9cbe" alt="Architecture Overview" />
+
+      <ol start="9">
+        <li>Access the application in your web browser:</li>
+      </ol>
+      <pre>
+      <code><a href="http://localhost:3000">http://localhost:3000</a></code>
+    </pre>
+      <ol start="10">
+        <li>Details About Docker images:</li>
+      </ol>
+      <pre>
+    <code id="build-code-image">docker images</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('build-code-image')">📋</span>
+    <!-- </button> -->
+</pre>
+      <!-- <img src="./images/docker_images.PNG" alt="Architecture Overview" /> -->
+      <ol start="11">
+        <li>Details About Docker-Compose :</li>
+      </ol>
+      <pre>
+    <code id="build-code-ps">docker-Compose ps</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('build-code-ps')">📋</span>
+    <!-- </button> -->
+</pre>
+      <!-- <img src="./images/docker_images.PNG" alt="Architecture Overview" /> -->
+
+      <ol start="12">
+        <li>Details About Docker-Compose Images:</li>
+      </ol>
+      <pre>
+    <code id="build-code-images">docker-Compose images</code>
+    <!-- <button class="copy-button" onclick="copyToClipboard('build-code')"> -->
+        <span class="copy-icon" onclick="copyToClipboard('build-code-images')">📋</span>
+    <!-- </button> -->
+</pre>
+      <img src="https://github.com/kathan-shah1893/IA_cloud/assets/136159210/709f88e5-c720-41a4-a7d5-fb182fa3b587" alt="Architecture Overview" />
+
+
+      <ol start="13">
+        <li>Add Docker Image to your account:</li>
+      </ol>
+      <pre>
+    <code id="pull">
+docker tag ia_vproweb:latest sonubodat77/ia_vproweb:latest
+docker tag rabbitmq:latest sonubodat77/rabbitmq:latest
+docker tag memcached:latest sonubodat77/memcached:latest
+docker tag vprofiledb:latest sonubodat77/vprofiledb:latest
+
+
+
+docker push sonubodat77/ia_vproweb:latest
+docker push sonubodat77/rabbitmq:latest
+docker push sonubodat77/memcached:latest
+docker push sonubodat77/vprofiledb:latest
+
+</code>
+        <span class="copy-icon" onclick="copyToClipboard('pull')">📋</span>
+</pre>
+
+
+      <h2>Display Screenshot of the Website</h2>
+      <h5>DashBoard</h5>
+      <img src="https://github.com/kathan-shah1893/IA_cloud/assets/136159210/f648801a-1086-407f-8b39-6c899790bfac" alt="Screenshot of the Website" />
+      <h5>Database</h5>
+      <img src="https://github.com/kathan-shah1893/IA_cloud/assets/136159210/e6590a19-a91e-4378-8794-adb28cad0e3e" alt="Screenshot of the Website" />
+
+      <h2>Github</h2>
+<pre>
+    <code id="github"><a href="https://github.com/sonubodat">https://github.com/sonubodat</a></code>
+        <span class="copy-icon" onclick="copyToClipboard('github')">📋</span>
+</pre>
+
+
+      <h2>Get My Image</h2>
+<pre>
+    <code id="doc-pull">
+        docker pull sonubodat77/ia_vproweb:latest
+        docker pull sonubodat77/rabbitmq:latest
+        docker pull sonubodat77/memcached:latest
+        docker pull sonubodat77/vprofiledb:latest
+    </code>
+        <span class="copy-icon" onclick="copyToClipboard('doc-pull')">📋</span>
+</pre>
+
+
+      <div class="author">
+        <h2>Author</h2>
+        <p><a href="https://github.com/sonubodat">Sonu Bodat</a></p>
+      </div>
+
+      <!-- <div class="acknowledgements">
+        <h2>Acknowledgements</h2>
+        <p>
+          This project is inspired by
+          <a href="https://github.com/hkhcoder/vprofile-project">Imran teli</a>
+          and their work on
+          <a href="https://github.com/hkhcoder/vprofile-project"
+            >(https://github.com/hkhcoder/vprofile-project)</a
+          >.
+        </p>
+      </div> -->
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
